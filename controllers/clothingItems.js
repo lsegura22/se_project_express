@@ -1,5 +1,3 @@
-// controllers/clothingItems.js
-
 const ClothingItem = require("../models/clothingItem");
 const {
   BAD_REQUEST,
@@ -27,7 +25,14 @@ module.exports.createClothingItem = (req, res) => {
     .then((item) => res.send(item))
     .catch((err) => {
       console.error(err);
-      res.status(BAD_REQUEST).send({ message: "Bad Request" });
+      if (err.name === "ValidationError") {
+        return res
+          .status(BAD_REQUEST)
+          .send({ message: "Invalid data provided" });
+      }
+      return res
+        .status(INTERNAL_SERVER_ERROR)
+        .send({ message: "Internal server error" });
     });
 };
 

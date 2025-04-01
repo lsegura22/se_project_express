@@ -1,12 +1,19 @@
 const User = require("../models/user");
+const {
+  BAD_REQUEST,
+  NOT_FOUND,
+  CREATED,
+  INTERNAL_SERVER_ERROR,
+} = require("../utils/errors");
 
 // Get all users
 module.exports.getUsers = (req, res) => {
   User.find({})
     .then((users) => res.send({ data: users }))
-    .catch((err) => {
-      console.error(err);
-      res.status(500).send({ message: "Internal server error" });
+    .catch(() => {
+      res
+        .status(INTERNAL_SERVER_ERROR)
+        .send({ message: "Internal server error" });
     });
 };
 
@@ -17,18 +24,19 @@ module.exports.getUser = (req, res) => {
   User.findById(userId)
     .orFail(() => {
       const error = new Error("User not found");
-      error.statusCode = 404;
+      error.statusCode = NOT_FOUND;
       throw error;
     })
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === "CastError") {
-        res.status(400).send({ message: "Invalid user ID" });
-      } else if (err.statusCode === 404) {
-        res.status(404).send({ message: err.message });
+        res.status(BAD_REQUEST).send({ message: "Invalid user ID" });
+      } else if (err.statusCode === NOT_FOUND) {
+        res.status(NOT_FOUND).send({ message: err.message });
       } else {
-        console.error(err);
-        res.status(500).send({ message: "Internal server error" });
+        res
+          .status(INTERNAL_SERVER_ERROR)
+          .send({ message: "Internal server error" });
       }
     });
 };
@@ -38,15 +46,16 @@ module.exports.createUser = (req, res) => {
   const { name, avatar } = req.body;
 
   User.create({ name, avatar })
-    .then((user) => res.status(201).send({ data: user }))
+    .then((user) => res.status(CREATED).send({ data: user }))
     .catch((err) => {
-      console.error(err);
       if (err.name === "ValidationError") {
         res
-          .status(400)
+          .status(BAD_REQUEST)
           .send({ message: "Invalid data provided for creating user" });
       } else {
-        res.status(500).send({ message: "Internal server error" });
+        res
+          .status(INTERNAL_SERVER_ERROR)
+          .send({ message: "Internal server error" });
       }
     });
 };
