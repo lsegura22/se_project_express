@@ -3,14 +3,14 @@ const {
   BAD_REQUEST,
   NOT_FOUND,
   INTERNAL_SERVER_ERROR,
+  FORBIDDEN,
 } = require("../utils/errors");
 
 // Get all clothing items
 module.exports.getClothingItems = (req, res) => {
   ClothingItem.find({})
-    .then((items) => res.send(items))
-    .catch((err) => {
-      console.error(err);
+    .then((items) => res.send({ data: items }))
+    .catch(() => {
       res
         .status(INTERNAL_SERVER_ERROR)
         .send({ message: "Internal server error" });
@@ -22,9 +22,8 @@ module.exports.createClothingItem = (req, res) => {
   const { name, weather, imageUrl } = req.body;
 
   ClothingItem.create({ name, weather, imageUrl, owner: req.user._id })
-    .then((item) => res.send(item))
+    .then((item) => res.send({ data: item }))
     .catch((err) => {
-      console.error(err);
       if (err.name === "ValidationError") {
         return res
           .status(BAD_REQUEST)
@@ -36,18 +35,31 @@ module.exports.createClothingItem = (req, res) => {
     });
 };
 
-// Delete a clothing item
+// Delete a clothing item (only if user is owner)
 module.exports.deleteClothingItem = (req, res) => {
-  ClothingItem.findByIdAndDelete(req.params.itemId)
-    .orFail(() => new Error("Item not found"))
-    .then((item) => res.send(item))
+  ClothingItem.findById(req.params.itemId)
+    .orFail(() => {
+      const error = new Error("Item not found");
+      error.statusCode = NOT_FOUND;
+      throw error;
+    })
+    .then((item) => {
+      if (item.owner.toString() !== req.user._id) {
+        return res
+          .status(FORBIDDEN)
+          .send({ message: "You are not authorized to delete this item" });
+      }
+
+      return ClothingItem.findByIdAndDelete(req.params.itemId).then(
+        (deletedItem) => res.send({ data: deletedItem })
+      );
+    })
     .catch((err) => {
       if (err.name === "CastError") {
         res.status(BAD_REQUEST).send({ message: "Invalid item ID" });
-      } else if (err.message === "Item not found") {
+      } else if (err.statusCode === NOT_FOUND) {
         res.status(NOT_FOUND).send({ message: err.message });
       } else {
-        console.error(err);
         res
           .status(INTERNAL_SERVER_ERROR)
           .send({ message: "Internal server error" });
@@ -67,9 +79,8 @@ module.exports.likeItem = (req, res) => {
       error.statusCode = NOT_FOUND;
       throw error;
     })
-    .then((item) => res.send(item))
+    .then((item) => res.send({ data: item }))
     .catch((err) => {
-      console.error(err);
       if (err.name === "CastError") {
         res.status(BAD_REQUEST).send({ message: "Invalid item ID" });
       } else if (err.statusCode === NOT_FOUND) {
@@ -94,9 +105,8 @@ module.exports.dislikeItem = (req, res) => {
       error.statusCode = NOT_FOUND;
       throw error;
     })
-    .then((item) => res.send(item))
+    .then((item) => res.send({ data: item }))
     .catch((err) => {
-      console.error(err);
       if (err.name === "CastError") {
         res.status(BAD_REQUEST).send({ message: "Invalid item ID" });
       } else if (err.statusCode === NOT_FOUND) {

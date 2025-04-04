@@ -1,33 +1,39 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
+const cors = require("cors");
+
 const { NOT_FOUND } = require("./utils/errors");
+const { login, createUser } = require("./controllers/users");
+const auth = require("./middlewares/auth");
+
+const userRoutes = require("./routes/users");
+const { getClothingItems } = require("./controllers/clothingItems"); // only GET is public
+const protectedItemRoutes = require("./routes/clothingItems");
 
 const app = express();
 const { PORT = 3001 } = process.env;
 
 // Middleware
+app.use(cors());
 app.use(bodyParser.json());
 
 // Connect to MongoDB
-mongoose.connect("mongodb://127.0.0.1:27017/wtwr_db", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+mongoose.connect("mongodb://127.0.0.1:27017/wtwr_db");
 
-// TEMP AUTH MIDDLEWARE (will be replaced later)
-app.use((req, res, next) => {
-  req.user = {
-    _id: "5d8b8592978f8bd833ca8133", // Replace with your actual test user _id
-  };
-  next();
-});
+// Public routes (no auth required)
+app.post("/signup", createUser);
+app.post("/signin", login);
+app.get("/items", getClothingItems); // Only GET is public
 
-// Routes
-app.use("/users", require("./routes/users"));
-app.use("/items", require("./routes/clothingItems"));
+// Auth middleware — protects everything below this line
+app.use(auth);
 
-// Default 404 route
+// Protected routes
+app.use("/users", userRoutes);
+app.use("/items", protectedItemRoutes); // All other /items methods (POST, DELETE, etc.)
+
+// Catch-all 404 route
 app.use("*", (req, res) => {
   res.status(NOT_FOUND).send({ message: "Requested resource not found" });
 });
