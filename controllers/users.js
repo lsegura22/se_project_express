@@ -53,12 +53,16 @@ module.exports.login = (req, res) => {
     .select("+password")
     .then((user) => {
       if (!user) {
-        throw new Error("Unauthorized");
+        const err = new Error("Unauthorized");
+        err.statusCode = UNAUTHORIZED;
+        throw err;
       }
 
       return bcrypt.compare(password, user.password).then((matched) => {
         if (!matched) {
-          throw new Error("Unauthorized");
+          const err = new Error("Unauthorized");
+          err.statusCode = UNAUTHORIZED;
+          throw err;
         }
 
         const token = jwt.sign({ _id: user._id }, JWT_SECRET, {
@@ -68,8 +72,16 @@ module.exports.login = (req, res) => {
         res.send({ token });
       });
     })
-    .catch(() => {
-      res.status(UNAUTHORIZED).send({ message: "Incorrect email or password" });
+    .catch((err) => {
+      if (err.message === "Unauthorized") {
+        return res
+          .status(UNAUTHORIZED)
+          .send({ message: "Incorrect email or password" });
+      }
+
+      return res
+        .status(INTERNAL_SERVER_ERROR)
+        .send({ message: "Internal server error" });
     });
 };
 

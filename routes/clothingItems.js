@@ -1,8 +1,5 @@
-// routes/clothingItems.js
-
 const express = require("express");
 const {
-  getClothingItems,
   createClothingItem,
   deleteClothingItem,
   likeItem,
@@ -10,9 +7,6 @@ const {
 } = require("../controllers/clothingItems");
 
 const router = express.Router();
-
-// GET all items
-router.get("/", getClothingItems);
 
 // POST a new item
 router.post("/", createClothingItem);
