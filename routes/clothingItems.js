@@ -1,4 +1,5 @@
 const express = require("express");
+const auth = require("../middlewares/auth"); // ✅ import the auth middleware
 const {
   createClothingItem,
   deleteClothingItem,
@@ -8,16 +9,10 @@ const {
 
 const router = express.Router();
 
-// POST a new item
-router.post("/", createClothingItem);
-
-// DELETE an item by ID
-router.delete("/:itemId", deleteClothingItem);
-
-// PUT a like on an item
-router.put("/:itemId/likes", likeItem);
-
-// DELETE a like from an item
-router.delete("/:itemId/likes", dislikeItem);
+// ✅ Apply auth to routes that require a logged-in user
+router.post("/", auth, createClothingItem);
+router.delete("/:itemId", auth, deleteClothingItem);
+router.put("/:itemId/likes", auth, likeItem);
+router.delete("/:itemId/likes", auth, dislikeItem);
 
 module.exports = router;
