@@ -4,16 +4,14 @@ const User = require("../models/user");
 const { JWT_SECRET } = require("../utils/config");
 
 const {
-  BAD_REQUEST,
-  NOT_FOUND,
-  CONFLICT,
-  CREATED,
-  INTERNAL_SERVER_ERROR,
-  UNAUTHORIZED,
-} = require("../utils/errors");
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+  UnauthorizedError,
+} = require("../errors");
 
 // Sign up
-module.exports.createUser = (req, res) => {
+module.exports.createUser = (req, res, next) => {
   const { name, avatar, email, password } = req.body;
 
   bcrypt
@@ -22,47 +20,39 @@ module.exports.createUser = (req, res) => {
     .then((user) => {
       const userWithoutPassword = user.toObject();
       delete userWithoutPassword.password;
-      return res.status(CREATED).send({ data: userWithoutPassword });
+      res.status(201).send({ data: userWithoutPassword });
     })
     .catch((err) => {
       if (err.code === 11000) {
-        return res.status(CONFLICT).send({ message: "Email already exists" });
+        return next(new ConflictError("Email already exists"));
       }
       if (err.name === "ValidationError") {
-        return res
-          .status(BAD_REQUEST)
-          .send({ message: "Invalid data provided for creating user" });
+        return next(
+          new BadRequestError("Invalid data provided for creating user")
+        );
       }
-      return res
-        .status(INTERNAL_SERVER_ERROR)
-        .send({ message: "Internal server error" });
+      return next(err);
     });
 };
 
 // Login
-module.exports.login = (req, res) => {
+module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return res
-      .status(BAD_REQUEST)
-      .send({ message: "Email and password are required" });
+    return next(new BadRequestError("Email and password are required"));
   }
 
-  return User.findOne({ email })
+  User.findOne({ email })
     .select("+password")
     .then((user) => {
       if (!user) {
-        const err = new Error("Unauthorized");
-        err.statusCode = UNAUTHORIZED;
-        throw err;
+        throw new UnauthorizedError("Incorrect email or password");
       }
 
       return bcrypt.compare(password, user.password).then((matched) => {
         if (!matched) {
-          const err = new Error("Unauthorized");
-          err.statusCode = UNAUTHORIZED;
-          throw err;
+          throw new UnauthorizedError("Incorrect email or password");
         }
 
         const token = jwt.sign({ _id: user._id }, JWT_SECRET, {
@@ -72,43 +62,24 @@ module.exports.login = (req, res) => {
         res.send({ token });
       });
     })
-    .catch((err) => {
-      if (err.message === "Unauthorized") {
-        return res
-          .status(UNAUTHORIZED)
-          .send({ message: "Incorrect email or password" });
-      }
-
-      return res
-        .status(INTERNAL_SERVER_ERROR)
-        .send({ message: "Internal server error" });
-    });
+    .catch(next);
 };
 
 // Get current user
-module.exports.getCurrentUser = (req, res) => {
+module.exports.getCurrentUser = (req, res, next) => {
   User.findById(req.user._id)
-    .orFail(() => {
-      const error = new Error("User not found");
-      error.statusCode = NOT_FOUND;
-      throw error;
-    })
+    .orFail(() => new NotFoundError("User not found"))
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === "CastError") {
-        res.status(BAD_REQUEST).send({ message: "Invalid user ID" });
-      } else if (err.statusCode === NOT_FOUND) {
-        res.status(NOT_FOUND).send({ message: err.message });
-      } else {
-        res
-          .status(INTERNAL_SERVER_ERROR)
-          .send({ message: "Internal server error" });
+        return next(new BadRequestError("Invalid user ID"));
       }
+      return next(err);
     });
 };
 
 // Update user profile
-module.exports.updateUser = (req, res) => {
+module.exports.updateUser = (req, res, next) => {
   const { name, avatar } = req.body;
 
   User.findByIdAndUpdate(
@@ -116,23 +87,12 @@ module.exports.updateUser = (req, res) => {
     { name, avatar },
     { new: true, runValidators: true }
   )
-    .orFail(() => {
-      const error = new Error("User not found");
-      error.statusCode = NOT_FOUND;
-      throw error;
-    })
+    .orFail(() => new NotFoundError("User not found"))
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === "ValidationError") {
-        res
-          .status(BAD_REQUEST)
-          .send({ message: "Invalid data for updating user" });
-      } else if (err.statusCode === NOT_FOUND) {
-        res.status(NOT_FOUND).send({ message: err.message });
-      } else {
-        res
-          .status(INTERNAL_SERVER_ERROR)
-          .send({ message: "Internal server error" });
+        return next(new BadRequestError("Invalid data for updating user"));
       }
+      return next(err);
     });
 };
