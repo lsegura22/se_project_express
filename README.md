@@ -31,3 +31,9 @@ Install dependencies:
 ```bash
 npm install
 ```
+
+## 🌐 Deployed API
+
+The backend for this project is deployed and accessible at:
+
+🔗 https://api.wtwrlash.ignorelist.com
