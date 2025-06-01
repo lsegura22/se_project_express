@@ -29,6 +29,11 @@ app.use(bodyParser.json());
 
 // ✅ Log all incoming requests
 app.use(requestLogger);
+app.get('/crash-test', () => {
+  setTimeout(() => {
+    throw new Error('Server will crash now');
+  }, 0);
+});
 
 // ✅ Public routes (no auth required)
 app.post("/signup", createUser);
