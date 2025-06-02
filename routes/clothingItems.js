@@ -1,5 +1,5 @@
 const express = require("express");
-const auth = require("../middlewares/auth"); // ✅ import the auth middleware
+const auth = require("../middlewares/auth");
 const {
   createClothingItem,
   deleteClothingItem,
@@ -7,12 +7,15 @@ const {
   dislikeItem,
 } = require("../controllers/clothingItems");
 
+// ✅ Import validation functions
+const { validateCardBody, validateId } = require("../middlewares/validation");
+
 const router = express.Router();
 
-// ✅ Apply auth to routes that require a logged-in user
-router.post("/", auth, createClothingItem);
-router.delete("/:itemId", auth, deleteClothingItem);
-router.put("/:itemId/likes", auth, likeItem);
-router.delete("/:itemId/likes", auth, dislikeItem);
+// ✅ Apply auth and validation to each route
+router.post("/", auth, validateCardBody, createClothingItem); // validation for item body
+router.delete("/:itemId", auth, validateId, deleteClothingItem); // validation for itemId
+router.put("/:itemId/likes", auth, validateId, likeItem); // validation for itemId
+router.delete("/:itemId/likes", auth, validateId, dislikeItem); // validation for itemId
 
 module.exports = router;

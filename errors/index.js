@@ -1,7 +1,13 @@
+const BadRequestError = require("./bad-request-err");
+const UnauthorizedError = require("./unauthorized-err");
+const ForbiddenError = require("./forbidden-err");
+const NotFoundError = require("./not-found-err");
+const ConflictError = require("./conflict-err");
+
 module.exports = {
-  BadRequestError: require("./bad-request-err"),
-  UnauthorizedError: require("./unauthorized-err"),
-  ForbiddenError: require("./forbidden-err"),
-  NotFoundError: require("./not-found-err"),
-  ConflictError: require("./conflict-err"),
+  BadRequestError,
+  UnauthorizedError,
+  ForbiddenError,
+  NotFoundError,
+  ConflictError,
 };
