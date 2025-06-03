@@ -1,10 +1,11 @@
-require("dotenv").config(); // Load env variables first
+require("dotenv").config();
 
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const { errors } = require("celebrate");
+const winston = require("winston");
 
 const { requestLogger, errorLogger } = require("./middlewares/logger");
 const errorHandler = require("./middlewares/error-handler");
@@ -30,11 +31,6 @@ app.use(bodyParser.json());
 
 // ✅ Log all incoming requests
 app.use(requestLogger);
-app.get('/crash-test', () => {
-  setTimeout(() => {
-    throw new Error('Server will crash now');
-  }, 0);
-});
 
 // ✅ Crash test route (optional)
 app.get("/crash-test", () => {
@@ -70,6 +66,5 @@ app.use(errors());
 app.use(errorHandler);
 
 // ✅ Start the server
-app.listen(PORT, () => {
-  console.log(`App listening at port ${PORT}`);
-});
+winston.info(`App listening at port ${PORT}`);
+app.listen(PORT);

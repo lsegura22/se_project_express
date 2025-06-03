@@ -37,8 +37,11 @@ const userSchema = new mongoose.Schema({
   },
 });
 
-// Custom static method for login
-userSchema.statics.findUserByCredentials = function (email, password) {
+// Custom static method for login (with named function for ESLint compliance)
+userSchema.statics.findUserByCredentials = function findUserByCredentials(
+  email,
+  password
+) {
   return this.findOne({ email })
     .select("+password")
     .then((user) => {

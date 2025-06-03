@@ -43,7 +43,7 @@ module.exports.login = (req, res, next) => {
     return next(new BadRequestError("Email and password are required"));
   }
 
-  User.findOne({ email })
+  return User.findOne({ email })
     .select("+password")
     .then((user) => {
       if (!user) {
@@ -59,7 +59,7 @@ module.exports.login = (req, res, next) => {
           expiresIn: "7d",
         });
 
-        return res.send({ token });
+        return res.send({ token }); // ✅ Explicit return added
       });
     })
     .catch(next);
